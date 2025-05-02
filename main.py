@@ -9,7 +9,7 @@ LANGUAGE = "pl-PL"
 def main():
     print(f"""
 #######################################
- 🎤 DISCORD VOICE BOT - DZIAŁA 100%
+ 
 #######################################
 1. Otwórz Discord i kliknij w pole tekstowe
 2. Mów wyraźnie:
@@ -35,7 +35,7 @@ def main():
                     print(" WYŁĄCZAM")
                     break
                 
-                # Komendy Discord
+                
                 if text.startswith('emoji '):
                     emoji = text.split('emoji ')[1]
                     pyautogui.write(f':{emoji}:')
