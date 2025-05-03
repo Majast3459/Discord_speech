@@ -1,57 +1,112 @@
 import speech_recognition as sr
 import pyautogui
 import time
+import os
+from datetime import datetime
 
 #KONFIGURACJA
-MIC_ID = 2  
+MIC_ID = 2
 LANGUAGE = "pl-PL"
+SEND_COMMANDS = ["wyślij", "wyslij", "wślij", "sen", "send"]
+SCREEN_COMMANDS = ["screen", "skrin"]
+END_COMMANDS = ["koniec"]
+DISCORD_PATH = r"" 
 
 def main():
     print(f"""
 #######################################
- 
+  DISCORD VOICE  - BEZ CISZY T
 #######################################
-1. Otwórz Discord i kliknij w pole tekstowe
-2. Mów wyraźnie:
-   - Normalny tekst -> wpisze wiadomość
-   - "emoji X" -> wstawia emoji X
-   - "gif X" -> wyszukuje GIFa X
-   - "stop" -> wyłącza bota
-3. Twój mikrofon: USB Condenser (ID: {MIC_ID})
+- Mów normalnie — program zapisuje wiadomość.
+- "wyślij" → wysyła zebrany tekst.
+- "koniec" → kończy sesję.
+- "screen" → robi zrzut ekranu.
+- "emoji X", "gif X" → dodaje emoji lub gif.
+- Komendy:
+  - "wycisz się" → wycisza mikrofon w Discordzie
+  - "rozłącz" → rozłącza z Voice Chat w Discordzie
+  - "odpal kamerę" → uruchamia kamerę w Discordzie
 """)
 
     r = sr.Recognizer()
-    
+    r.pause_threshold = 1.0
+    message_buffer = ""
+
     while True:
-        input("\nNACIŚNIJ ENTER I MÓW...")
         try:
             with sr.Microphone(device_index=MIC_ID) as source:
-                print("🟢 MÓW TERAZ...")
-                audio = r.listen(source, timeout=3)
+                print("🎙️ Nasłuchiwanie...")
+                audio = r.listen(source)
+
+            try:
                 text = r.recognize_google(audio, language=LANGUAGE).lower()
-                print(f"ROZPOZNANO: {text}")
+                print(f"🗣️ Rozpoznano: {text}")
+
                 
-                if 'stop' in text:
-                    print(" WYŁĄCZAM")
+                if any(cmd in text for cmd in SCREEN_COMMANDS):
+                
+                    filename = f"screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                    pyautogui.screenshot(filename)
+                    print(f"📸 Screenshot zapisany: {filename}")
+                    pyautogui.write(f"[Zrzut ekranu zapisany: {filename}]")
+                    pyautogui.press('enter')
+                    continue
+
+               
+                if any(cmd in text for cmd in SEND_COMMANDS):
+                    for cmd in SEND_COMMANDS:
+                        text = text.replace(cmd, "")
+                    message_buffer += " " + text.strip()
+                    print(f"✉️ Wysyłanie: {message_buffer.strip()}")
+                    pyautogui.write(message_buffer.strip())
+                    pyautogui.press('enter')
+                    message_buffer = ""
+                    continue
+
+                # KONIEC
+                if any(cmd in text for cmd in END_COMMANDS):
+                    print(" Sesja zakończona komendą 'koniec'.")
                     break
+
+               
+                if "wycisz się" in text:
+                    
+                    pyautogui.hotkey('ctrl', 'shift', 'm')
+                    print("🎤 Wyciszyłem mikrofon!")
+                    continue
+
+               
+                if "rozłącz" in text:
+                   
+                    pyautogui.hotkey('ctrl', 'shift', 'd')
+                    print("🔌 Rozłączono z Voice Chat!")
+                    continue
+
                 
-                
+                if "odpal kamerę" in text:
+                    
+                    pyautogui.hotkey('ctrl', 'shift', 'v')
+                    print("🎥 Uruchomiłem kamerę w Discordzie!")
+                    continue
+
+                # Emoji / gif
                 if text.startswith('emoji '):
                     emoji = text.split('emoji ')[1]
-                    pyautogui.write(f':{emoji}:')
+                    message_buffer += f' :{emoji}:'
                 elif text.startswith('gif '):
                     tag = text.split('gif ')[1]
-                    pyautogui.write(f'/giphy {tag}')
+                    message_buffer += f' /giphy {tag}'
                 else:
-                    pyautogui.write(text)
-                
-                time.sleep(0.3)
-                pyautogui.press('enter')
-                
-        except sr.WaitTimeoutError:
-            print("nie slychac")
+                    message_buffer += ' ' + text
+
+            except sr.UnknownValueError:
+                print("🤷‍♂️ Nie rozpoznano mowy.")
+            except sr.RequestError as e:
+                print(f"⚠️ Błąd połączenia z Google API: {e}")
+
         except Exception as e:
-            print(f"BŁĄD: {e}")
+            print(f"❌ Błąd: {e}")
 
 if __name__ == "__main__":
     main()
+
